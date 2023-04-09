@@ -1,44 +1,34 @@
-// Create a Discord Bot using Open AI API that interacts on the Discord Server
-require("dotenv").config();
+import dotenv from 'dotenv';
+import discord from 'discord.js';
+import { Configuration, OpenAIApi } from 'openai';
 
-// Prepare to connect to the Discord API
-const { Client, GatewayIntentBits } = require("discord.js");
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+dotenv.config();
+
+const client = new discord.Client({
+  intents: [discord.GatewayIntentBits.Guilds, discord.GatewayIntentBits.GuildMessages, discord.GatewayIntentBits.MessageContent],
 });
 
-// Prepare connection to OpenAI API
-const { Configuration, OpenAIApi } = require("openai");
 const configuration = new Configuration({
   organization: process.env.OPENAI_ORG,
-  apiKey: process.env.OPENAI_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
-
-// Check for when a message on discord is sent
-client.on("messageCreate", async function (message) {
-  try {
-    // Don't respond to yourself if message come from bot
-    if (message.author.bot) return;
-
-    const gptResponse = await openai.createCompletion({
-      model: "davinci",
-      prompt: ``,
-      temperature: 0.9,
-      max_tokens: 100,
-      stop: ["ChatGPT:", "rifaul02"],
-    });
-    message.reply(`${gptResponse.data.choices[0].text}`);
-    return;
-  } catch (err) {
-    console.log(err);
-  }
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// Log the bot into Discord
-client.login(process.env.DISCORD_TOKEN);
-console.log("Chat GPT Bot is Online on Discord");
+client.on('messageCreate', async (message) => {
+  console.log(`Received message from ${message.author.tag}: ${message.content}`);
+
+  if (message.author.bot) return;
+
+  const response = await openai.createCompletion({
+    model: 'text-davinci-003',
+    prompt: `${message.content}`,
+    max_tokens: 1000,
+    temperature: 0.2,
+  });
+  message.reply(`${response.data.choices[0].text}`);
+});
+
+client.login(process.env.DISCORD_BOT_TOKEN);
